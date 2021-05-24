@@ -1,11 +1,11 @@
 Remove dead code! :red_heart: :red_heart: :red_heart: :red_heart: :red_heart:
 
-This code can go the way of the wonderful :sauropod: as it has been replaced
-with:
+This code can go the way of the wonderful :sauropod: as our :nesting_dolls:
+tech has been replaced with:
 
 	#!/bin/bash
-	msg='Sorry we have gone out of business!'
-	printf '%s' "$msg"
+	msg='Sorry we have gone out of business! :headstone:'
+	printf '%s\n' "$msg"
 	exit 0
 
 I suppose it is not that easy after all to build a product based on

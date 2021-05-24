@@ -29,24 +29,29 @@ function install-cldr {
 	return 0
 }
 
-function short-code-emoji {
-	local short_code=$1
-	local cldr_file=$2
-	local tts=${short_code//_/ }
+function short-code-emoji-daemon {
 	local emoji
-	pushd ~/tmp/cldr >/dev/null
-	if ! emoji=$(
-		jq -r --arg tts "${tts}" '.annotations.annotations | to_entries[] | select(.value.tts[0] == $tts) | .key' <"$cldr_file"
-	); then
-		printf 'ERROR: Unable to parse cldr json\n' >&2
-		return 1
-	fi
-	if [[ -z "$emoji" ]]; then
-		printf '?%s?' "$short_code"
-	else
-		printf '%s' "$emoji"
-	fi
-	return 0
+	declare -A emoji_cache
+	while IFS=$'\t' read -ra args; do
+		local short_code="${args[0]}"
+		local tts=${short_code//_/ }
+		local cldr_file="${args[1]}"
+		if ! [[ -v "emoji_cache[$short_code]" ]]; then
+			pushd ~/tmp/cldr >/dev/null
+			if ! emoji=$(
+				jq -r --arg tts "${tts}" '.annotations.annotations | to_entries[] | select(.value.tts[0] == $tts) | .key' <"$cldr_file"
+			); then
+				printf 'ERROR: Unable to parse cldr json\n' >&2
+				exit 1
+			fi
+			if [[ -z "$emoji" ]]; then
+				emoji_cache[$short_code]="?${short_code}?"
+			else
+				emoji_cache[$short_code]=$emoji
+			fi
+		fi
+		printf '%s\n' "${emoji_cache[$short_code]}"
+	done
 }
 
 function parse-text {
@@ -68,7 +73,7 @@ function parse-text {
 			fi
 		fi
 		if [[ "$char" == ':' && "$parsing_short_code" == 'true' ]]; then
-			printf '%s' "$(short-code-emoji "$short_code" "$cldr_file")"
+			printf '%s' "$(query-short-code-emoji "$short_code" "$cldr_file")"
 			parsing_short_code='false'
 			continue
 		fi
@@ -85,6 +90,14 @@ function parse-text {
 	return 0
 }
 
+# XXX error handling, return code as first value?
+query-short-code-emoji() {
+	local IFS=$'\t'
+	printf '%s\n' "$*" >&"${SHORT_CODE_EMOJI[1]}"
+	read -r resp <&"${SHORT_CODE_EMOJI[0]}"
+	printf '%s\n' "$resp"
+}
+
 function main {
 	local state_dir="${XDG_DATA_HOME:-$HOME}/.local/share}/emojify"
 	local cldr_file="${state_dir}/cldr-annotations-modern/annotations/en/annotations.json"
@@ -92,6 +105,9 @@ function main {
 		mkdir -p "$state_dir"
 		install-cldr "$state_dir"
 	fi
+
+	coproc SHORT_CODE_EMOJI { short-code-emoji-daemon; }
+
 	parse-text "$cldr_file"
 }
 
