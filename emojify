@@ -1,12 +1,12 @@
 #!/bin/bash
 
-set -o errexit
 set -o nounset
+set -o errexit
+shopt -s inherit_errexit
 shopt -s lastpipe
 
 function install-cldr {
 	local state_dir=$1
-
 	printf 'Installing cldr data...\n' >&2
 	cd "$state_dir"
 	if ! cldr_url=$(
@@ -21,10 +21,10 @@ function install-cldr {
 		return 1
 	fi
 	if ! curl -Ls "$cldr_url" >cldr-json.zip; then
-		printf 'ERROR: Unable to download url cldr\n' >&2
+		printf 'ERROR: Unable to download cldr zip\n' >&2
 		return 1
 	fi
-	unzip -q cldr-json
+	unzip -q cldr-json.zip
 	rm cldr-json.zip
 	return 0
 }
@@ -32,17 +32,16 @@ function install-cldr {
 function short-code-emoji-daemon {
 	local emoji
 	declare -A emoji_cache
-	while IFS=$'\t' read -ra args; do
-		local short_code="${args[0]}"
+	while IFS=$'\t' read -ra query; do
+		local short_code="${query[0]}"
+		local cldr_file="${query[1]}"
 		local tts=${short_code//_/ }
-		local cldr_file="${args[1]}"
 		if ! [[ -v "emoji_cache[$short_code]" ]]; then
-			pushd ~/tmp/cldr >/dev/null
 			if ! emoji=$(
 				jq -r --arg tts "${tts}" '.annotations.annotations | to_entries[] | select(.value.tts[0] == $tts) | .key' <"$cldr_file"
 			); then
 				printf 'ERROR: Unable to parse cldr json\n' >&2
-				exit 1
+				printf '%d\t%s\n' 1 ""
 			fi
 			if [[ -z "$emoji" ]]; then
 				emoji_cache[$short_code]="?${short_code}?"
@@ -50,56 +49,59 @@ function short-code-emoji-daemon {
 				emoji_cache[$short_code]=$emoji
 			fi
 		fi
-		printf '%s\n' "${emoji_cache[$short_code]}"
+		printf '%d\t%s\n' 0 "${emoji_cache[$short_code]}"
 	done
 }
 
 function parse-text {
 	local cldr_file=$1
-
 	local parsing_short_code='false'
-	local short_code=''
+	local emoji
 	local char
-
+	local short_code_accum=''
 	while IFS= read -r -N1 char; do
+		if [[ "$char" != ':' && "$parsing_short_code" == 'false' ]]; then
+			printf '%s' "$char"
+			continue
+		fi
 		if [[ "$char" != ':' && "$parsing_short_code" == 'true' ]]; then
 			if [[ "$char" =~ [a-z_] ]]; then
-				short_code+=$char
+				short_code_accum+=$char
 				continue
 			else
-				printf ':%s%s' "$short_code" "$char"
+				printf ':%s%s' "$short_code_accum" "$char"
 				parsing_short_code='false'
 				continue
 			fi
 		fi
 		if [[ "$char" == ':' && "$parsing_short_code" == 'true' ]]; then
-			printf '%s' "$(query-short-code-emoji "$short_code" "$cldr_file")"
+			if ! emoji=$(query-short-code-emoji "$short_code_accum" "$cldr_file"); then
+				printf 'ERROR: Unable to obtain emoji for short code, :%s:\n' "$short_code_accum" >&2
+				return 1
+			fi
+			printf '%s' "$emoji"
 			parsing_short_code='false'
-			continue
-		fi
-		if [[ "$char" != ':' && "$parsing_short_code" == 'false' ]]; then
-			printf '%s' "$char"
 			continue
 		fi
 		if [[ "$char" == ':' && "$parsing_short_code" == 'false' ]]; then
 			parsing_short_code='true'
-			short_code=''
+			short_code_accum=''
 			continue
 		fi
 	done
 	return 0
 }
 
-# XXX error handling, return code as first value?
 query-short-code-emoji() {
 	local IFS=$'\t'
 	printf '%s\n' "$*" >&"${SHORT_CODE_EMOJI[1]}"
-	read -r resp <&"${SHORT_CODE_EMOJI[0]}"
+	read -r ret resp <&"${SHORT_CODE_EMOJI[0]}"
 	printf '%s\n' "$resp"
+	return "$ret"
 }
 
 function main {
-	local state_dir="${XDG_DATA_HOME:-$HOME}/.local/share}/emojify"
+	local state_dir="${XDG_DATA_HOME:-$HOME}/.local/share/emojify"
 	local cldr_file="${state_dir}/cldr-annotations-modern/annotations/en/annotations.json"
 	if ! [[ -e "$cldr_file" ]]; then
 		mkdir -p "$state_dir"

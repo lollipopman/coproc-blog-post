@@ -86,7 +86,7 @@ function parse-text {
 }
 
 function main {
-	local state_dir="${XDG_DATA_HOME:-$HOME}/.local/share}/emojify"
+	local state_dir="${XDG_DATA_HOME:-$HOME}/.local/share/emojify"
 	local cldr_file="${state_dir}/cldr-annotations-modern/annotations/en/annotations.json"
 	if ! [[ -e "$cldr_file" ]]; then
 		mkdir -p "$state_dir"
