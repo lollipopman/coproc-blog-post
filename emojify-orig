@@ -1,0 +1,98 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+shopt -s lastpipe
+
+function install-cldr {
+	local state_dir=$1
+
+	printf 'Installing cldr data...\n' >&2
+	cd "$state_dir"
+	if ! cldr_url=$(
+		curl -s https://api.github.com/repos/unicode-org/cldr-json/releases/latest |
+			jq -r '.assets[] | select(.name | test("modern.zip$")) | .browser_download_url'
+	); then
+		printf 'ERROR: Unable to determine download url\n' >&2
+		return 1
+	fi
+	if [[ -z "$cldr_url" ]]; then
+		printf 'ERROR: Unable to determine download url\n' >&2
+		return 1
+	fi
+	if ! curl -Ls "$cldr_url" >cldr-json.zip; then
+		printf 'ERROR: Unable to download url cldr\n' >&2
+		return 1
+	fi
+	unzip -q cldr-json
+	rm cldr-json.zip
+	return 0
+}
+
+function short-code-emoji {
+	local short_code=$1
+	local cldr_file=$2
+	local tts=${short_code//_/ }
+	local emoji
+	pushd ~/tmp/cldr >/dev/null
+	if ! emoji=$(
+		jq -r --arg tts "${tts}" '.annotations.annotations | to_entries[] | select(.value.tts[0] == $tts) | .key' <"$cldr_file"
+	); then
+		printf 'ERROR: Unable to parse cldr json\n' >&2
+		return 1
+	fi
+	if [[ -z "$emoji" ]]; then
+		printf '?%s?' "$short_code"
+	else
+		printf '%s' "$emoji"
+	fi
+	return 0
+}
+
+function parse-text {
+	local cldr_file=$1
+
+	local parsing_short_code='false'
+	local short_code=''
+	local char
+
+	while IFS= read -r -N1 char; do
+		if [[ "$char" != ':' && "$parsing_short_code" == 'true' ]]; then
+			if [[ "$char" =~ [a-z_] ]]; then
+				short_code+=$char
+				continue
+			else
+				printf ':%s%s' "$short_code" "$char"
+				parsing_short_code='false'
+				continue
+			fi
+		fi
+		if [[ "$char" == ':' && "$parsing_short_code" == 'true' ]]; then
+			printf '%s' "$(short-code-emoji "$short_code" "$cldr_file")"
+			parsing_short_code='false'
+			continue
+		fi
+		if [[ "$char" != ':' && "$parsing_short_code" == 'false' ]]; then
+			printf '%s' "$char"
+			continue
+		fi
+		if [[ "$char" == ':' && "$parsing_short_code" == 'false' ]]; then
+			parsing_short_code='true'
+			short_code=''
+			continue
+		fi
+	done
+	return 0
+}
+
+function main {
+	local state_dir="${XDG_DATA_HOME:-$HOME/.local/share}/emojify"
+	local cldr_file="${state_dir}/cldr-annotations-modern/annotations/en/annotations.json"
+	if ! [[ -e "$cldr_file" ]]; then
+		mkdir -p "$state_dir"
+		install-cldr "$state_dir"
+	fi
+	parse-text "$cldr_file"
+}
+
+main "$@"
