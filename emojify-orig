@@ -1,17 +1,20 @@
 #!/bin/bash
 
-set -o errexit
 set -o nounset
+set -o errexit
+shopt -s inherit_errexit
 shopt -s lastpipe
 
 function install-cldr {
 	local state_dir=$1
-
 	printf 'Installing cldr data...\n' >&2
 	cd "$state_dir"
 	if ! cldr_url=$(
 		curl -s https://api.github.com/repos/unicode-org/cldr-json/releases/latest |
-			jq -r '.assets[] | select(.name | test("modern.zip$")) | .browser_download_url'
+			jq -r '
+				.assets[] |
+				select(.name | test("modern.zip$")) |
+				.browser_download_url'
 	); then
 		printf 'ERROR: Unable to determine download url\n' >&2
 		return 1
@@ -21,10 +24,10 @@ function install-cldr {
 		return 1
 	fi
 	if ! curl -Ls "$cldr_url" >cldr-json.zip; then
-		printf 'ERROR: Unable to download url cldr\n' >&2
+		printf 'ERROR: Unable to download cldr zip\n' >&2
 		return 1
 	fi
-	unzip -q cldr-json
+	unzip -q cldr-json.zip
 	rm cldr-json.zip
 	return 0
 }
@@ -34,52 +37,59 @@ function short-code-emoji {
 	local cldr_file=$2
 	local tts=${short_code//_/ }
 	local emoji
-	pushd ~/tmp/cldr >/dev/null
 	if ! emoji=$(
-		jq -r --arg tts "${tts}" '.annotations.annotations | to_entries[] | select(.value.tts[0] == $tts) | .key' <"$cldr_file"
+		jq -r --arg tts "${tts}" '
+		  .annotations.annotations |
+			to_entries[] |
+			select(.value.tts[0] == $tts) |
+			.key' <"$cldr_file"
 	); then
 		printf 'ERROR: Unable to parse cldr json\n' >&2
 		return 1
 	fi
 	if [[ -z "$emoji" ]]; then
-		printf '?%s?' "$short_code"
+		printf '?%s?\n' "$short_code"
 	else
-		printf '%s' "$emoji"
+		printf '%s\n' "$emoji"
 	fi
 	return 0
 }
 
 function parse-text {
 	local cldr_file=$1
-
-	local parsing_short_code='false'
-	local short_code=''
+	local emoji
 	local char
-
+	local parsing_code='false'
+	local code_accum=''
 	while IFS= read -r -N1 char; do
-		if [[ "$char" != ':' && "$parsing_short_code" == 'true' ]]; then
-			if [[ "$char" =~ [a-z_] ]]; then
-				short_code+=$char
+		if [[ $char != ':' ]]; then
+			if [[ $parsing_code == 'false' ]]; then
+				printf '%s' "$char"
 				continue
 			else
-				printf ':%s%s' "$short_code" "$char"
-				parsing_short_code='false'
+				if [[ $char =~ [a-z_-] ]]; then
+					code_accum+=$char
+					continue
+				else
+					printf ':%s%s' "$code_accum" "$char"
+					parsing_code='false'
+					continue
+				fi
+			fi
+		else
+			if [[ $parsing_code == 'true' ]]; then
+				if ! emoji=$(short-code-emoji "$code_accum" "$cldr_file"); then
+					printf 'ERROR: Unable to obtain emoji for, :%s:\n' "$code_accum" >&2
+					return 1
+				fi
+				printf '%s' "$emoji"
+				parsing_code='false'
+				continue
+			else
+				parsing_code='true'
+				code_accum=''
 				continue
 			fi
-		fi
-		if [[ "$char" == ':' && "$parsing_short_code" == 'true' ]]; then
-			printf '%s' "$(short-code-emoji "$short_code" "$cldr_file")"
-			parsing_short_code='false'
-			continue
-		fi
-		if [[ "$char" != ':' && "$parsing_short_code" == 'false' ]]; then
-			printf '%s' "$char"
-			continue
-		fi
-		if [[ "$char" == ':' && "$parsing_short_code" == 'false' ]]; then
-			parsing_short_code='true'
-			short_code=''
-			continue
 		fi
 	done
 	return 0

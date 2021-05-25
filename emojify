@@ -33,12 +33,16 @@ function install-cldr {
 }
 
 function short-code-emoji-daemon {
+	local short_code
+	local cldr_file
+	local tts
 	local emoji
+	declare -a query
 	declare -A emoji_cache
 	while IFS=$'\t' read -ra query; do
-		local short_code="${query[0]}"
-		local cldr_file="${query[1]}"
-		local tts=${short_code//_/ }
+		short_code="${query[0]}"
+		cldr_file="${query[1]}"
+		tts=${short_code//_/ }
 		if ! [[ -v "emoji_cache[$short_code]" ]]; then
 			if ! emoji=$(
 				jq -r --arg tts "${tts}" '
@@ -60,6 +64,16 @@ function short-code-emoji-daemon {
 	done
 }
 
+short-code-emoji() {
+	local IFS=$'\t'
+	local ret
+	local resp
+	printf '%s\n' "$*" >&"${SHORT_CODE_EMOJI[1]}"
+	read -r ret resp <&"${SHORT_CODE_EMOJI[0]}"
+	printf '%s\n' "$resp"
+	return "$ret"
+}
+
 function parse-text {
 	local cldr_file=$1
 	local emoji
@@ -72,7 +86,7 @@ function parse-text {
 				printf '%s' "$char"
 				continue
 			else
-				if [[ $char =~ [a-z_] ]]; then
+				if [[ $char =~ [a-z_-] ]]; then
 					code_accum+=$char
 					continue
 				else
@@ -83,7 +97,7 @@ function parse-text {
 			fi
 		else
 			if [[ $parsing_code == 'true' ]]; then
-				if ! emoji=$(query-short-code-emoji "$code_accum" "$cldr_file"); then
+				if ! emoji=$(short-code-emoji "$code_accum" "$cldr_file"); then
 					printf 'ERROR: Unable to obtain emoji for, :%s:\n' "$code_accum" >&2
 					return 1
 				fi
@@ -98,14 +112,6 @@ function parse-text {
 		fi
 	done
 	return 0
-}
-
-query-short-code-emoji() {
-	local IFS=$'\t'
-	printf '%s\n' "$*" >&"${SHORT_CODE_EMOJI[1]}"
-	read -r ret resp <&"${SHORT_CODE_EMOJI[0]}"
-	printf '%s\n' "$resp"
-	return "$ret"
 }
 
 function main {
