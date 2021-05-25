@@ -4,10 +4,10 @@ This code can go the way of the wonderful :sauropod: as our :nesting_dolls:
 tech has been replaced with:
 
 	#!/bin/bash
-	msg='Sorry we have gone out of business! :headstone:'
+	msg='Sorry we have gone out of business! :nesting_dolls: :headstone:'
 	printf '%s\n' "$msg"
 	exit 0
 
 I suppose it is not that easy after all to build a product based on
 :nesting_dolls: or to innovate and build a better :mouse_trap:, good luck next
-time :red_heart:!
+time :red_heart: :red_heart:!
