@@ -2,24 +2,26 @@
 
 ## Motivation & Some Emoji
 
-How do you speed up a complex iptables generator written in Bash that
-runs `ip route` thousands of times, often with the same arguments?
+How do you speed up a complex Linux iptables generator written in Bash
+that executes `ip route` thousands of times, often with the same
+arguments?
 
-Well you could rearchitect to avoid the duplicate calls, but you deemed
-that too difficult, so instead perhaps you could return cached results
-for function calls when the inputs are identical, i.e.
+You could rearchitect the program to avoid the duplicate calls? Sadly
+you deem that too difficult. Perhaps you could return cached results for
+function calls when the inputs are identical, i.e.
 [memoize](https://en.wikipedia.org/wiki/Memoization) the calls? What a
 fabulous idea!
 
-Of course memoization of `ip route` executions doesn't sound very fun,
-so instead let us try to use memoization to speed up a fancy emoji short
-code program written in Bash. This program reads standard input and
-scans for emoji short codes, based on their text to speech description
-provided in Unicode's [Common Locale Data
-Repository](https://github.com/unicode-org/cldr-json) data, empowering
+Of course memoization of `ip route` executions with big routing tables
+doesn't sound very fun, so instead let us try to use memoization to
+speed up a fancy emoji short code program written in Bash. This program
+reads standard input and scans for emoji short codes, based on their
+text to speech description provided in Unicode's [Common Locale Data
+Repository](https://github.com/unicode-org/cldr-json), thus empowering
 you to make your commit messages more beautiful!
 
-    $ emojify <<-'EOF'
+    ```bash
+    $ ./emojify <<-'EOF'
         Remove dead code! :red_heart: :red_heart: :red_heart: :red_heart: :red_heart:
 
         This code can go the way of the wonderful :sauropod: as our :nesting_dolls:
@@ -48,11 +50,13 @@ you to make your commit messages more beautiful!
     I suppose it is not that easy after all to build a product based on
     🪆 or to innovate and build a better 🪤, good luck next
     time ❤ ❤!
+    ```
 
 The text parser reads each character of input and looks for short codes
 of the form `:<text to speech>:` replacing spaces in the text to speech
-description with underscores: e.g. `:yo-yo:`(🪀) or `:crystal_ball:`(🔮).
+description with underscores: e.g. `:yo-yo:`(🪀) or `:crystal_ball:`(🔮):
 
+    ```bash
     function parse-text {
         local cldr_file=$1
         local emoji
@@ -92,18 +96,22 @@ description with underscores: e.g. `:yo-yo:`(🪀) or `:crystal_ball:`(🔮).
         done
         return 0
     }
+    ```
 
 Once it finds a short code it calls the function `short-code-emoji` to
 obtain the short code:
 
+    ```bash
     if ! emoji=$(short-code-emoji "$code_accum" "$cldr_file"); then
         printf 'ERROR: Unable to obtain emoji for, :%s:\n' "$code_accum" >&2
         return 1
     fi
+    ```
 
-The `short-code-emoji` function uses `jq` to query the cldr data for the
+The `short-code-emoji` function uses `jq` to query the CLDR json for the
 emoji associated with the short code:
 
+    ```bash
     function short-code-emoji {
         local short_code=$1
         local cldr_file=$2
@@ -126,6 +134,7 @@ emoji associated with the short code:
         fi
         return 0
     }
+    ```
 
 Unfortunately, it is a bit slow, I can watch the emoji paint on my
 terminal!
@@ -138,110 +147,112 @@ terminal!
     sys     0m0.017s
     ```
 
-Parsing a 336K json file is pretty quick with `jq` but for every
+Parsing a 336Kib json file is pretty quick with `jq` but for every
 repeated short code in our input we our repeating our work even though
-we know the result. So how can we memoize those function calls to
-`short-code-emoji`?
+we know the result. So how can we memoize those repeated function calls
+to `short-code-emoji`?
 
-## Bash Functions Are Wacky
+## Bash Functions Are Wacky!
 
 Bash functions are a bit of an odd 🦆 when compared with a traditional
 programming language, for example when executing:
 
-``` bash
-#!/bin/bash
-function epoch {
-    printf '%(%s)T\n'
-}
+    ```bash
+    #!/bin/bash
+    function epoch {
+        printf '%(%s)T\n'
+    }
 
-unix_epoch=$(date +%s)
-printf 'from date cmd: %s\n' "$unix_epoch"
-unix_epoch=$(epoch)
-printf 'from epoch func: %s\n' "$unix_epoch"
-```
+    unix_epoch=$(date +%s)
+    printf 'from date cmd: %s\n' "$unix_epoch"
+    unix_epoch=$(epoch)
+    printf 'from epoch func: %s\n' "$unix_epoch"
+    ```
 
 You might assume that the calling of `epoch` occurs within the main Bash
-process. However, when a bash function is executed, within a command
-substitution, Bash forks a process and executes the function in the
-child process or subshell. So effectively the function is executed as a
-separate command rather than as part of the main Bash process. Try
-running `strace --trace=process` on the above snippet to see the forked
+process, in contrast to the execution of `date`. However, when a bash
+function is executed, within a command substitution, Bash forks a
+process and executes the function in a child process or subshell. So
+effectively the function is executed as a separate command like `date`
+rather than as part of the main Bash process. Try running
+`strace --trace=process` on the above snippet to see the forked
 children.
 
-Because a function in executed in a separate process a naive memoization
-strategy such as:
+Because a function is executed in a separate process, when using command
+substitution, a naive memoization strategy for a `rando` function that
+returns the same random value for any input might look like this:
 
-``` bash
-#!/bin/bash
-declare -A CACHE
+    ```bash
+    #!/bin/bash
+    declare -A CACHE
 
-function rando {
-    local IFS=$'\t'
-    if ! [[ -v "CACHE[$*]" ]]; then
-        CACHE[$*]=$RANDOM
-    fi
-    printf '%s\n' "${CACHE[$*]}"
-}
+    function rando {
+        local IFS=$'\t'
+        if ! [[ -v "CACHE[$*]" ]]; then
+            CACHE[$*]=$RANDOM
+        fi
+        printf '%s\n' "${CACHE[$*]}"
+    }
 
-printf "%s\n" "$(rando butter bubbles)"
-printf "%s\n" "$(rando butter bubbles)"
-```
+    printf "%s\n" "$(rando butter bubbles)"
+    printf "%s\n" "$(rando butter bubbles)"
+    ```
 
-Will not work as it will output two different random numbers for the
-same input because the associative array is only instantiated in the
-subprocess and so any writes to the array are lost when the subprocess
-exits. How do we memoize the results if the function is executed in a
-separate process?
+But, this will not work as it will output two different random numbers
+for the same input because the associative array is only instantiated in
+the subprocess and as a consequence any writes to the array are lost
+when the subprocess exits. How do we memoize the results if the function
+is executed in a separate process?
 
 There are many possible strategies including:
 
 1.  Prime the cache in our main process, to avoid writing to the cache
     in a subshell:
 
-    ``` bash
-    #!/bin/bash
-    declare -A CACHE
+        ```bash
+        #!/bin/bash
+        declare -A CACHE
 
-    function rando {
-      local IFS=$'\t'
-      printf '%s\n' "${CACHE[$*]}"
-    }
+        function rando {
+          local IFS=$'\t'
+          printf '%s\n' "${CACHE[$*]}"
+        }
 
-    OLD_IFS=$IFS
-    IFS=$'\t'
-    rando_args=("butter" "bubbles")
-    if ! [[ -v "CACHE[${rando_args[*]}]" ]]; then
-      CACHE[${rando_args[*]}]=$RANDOM
-    fi
-    IFS=$OLD_IFS
-    printf "%s\n" "$(rando butter bubbles)"
-    printf "%s\n" "$(rando butter bubbles)"
-    ```
+        OLD_IFS=$IFS
+        IFS=$'\t'
+        rando_args=("butter" "bubbles")
+        if ! [[ -v "CACHE[${rando_args[*]}]" ]]; then
+          CACHE[${rando_args[*]}]=$RANDOM
+        fi
+        IFS=$OLD_IFS
+        printf "%s\n" "$(rando butter bubbles)"
+        printf "%s\n" "$(rando butter bubbles)"
+        ```
 
-    Though that makes for some pretty hard to read code if you need to
-    cache a lot of values.
+    Though that method makes for some pretty hard to read code if you
+    need to cache a lot of values!
 
 2.  Cache the results in the filesystem:
 
-    ``` bash
-    #!/bin/bash
-    CACHE_DIR=$(mktemp -d)
+        ```bash
+        #!/bin/bash
+        CACHE_DIR=$(mktemp -d)
 
-    function rando {
-      local IFS=$'\t'
-      local key_file="${CACHE_DIR}/$*"
-      if ! [[ -e "$key_file" ]]; then
-        printf '%s\n' "$RANDOM" >"$key_file"
-      fi
-      cat "$key_file"
-    }
+        function rando {
+          local IFS=$'\t'
+          local key_file="${CACHE_DIR}/$*"
+          if ! [[ -e "$key_file" ]]; then
+            printf '%s\n' "$RANDOM" >"$key_file"
+          fi
+          cat "$key_file"
+        }
 
-    printf "%s\n" "$(rando butter bubbles)"
-    printf "%s\n" "$(rando butter bubbles)"
-    ```
+        printf "%s\n" "$(rando butter bubbles)"
+        printf "%s\n" "$(rando butter bubbles)"
+        ```
 
-    Works well, but requires cleaning up our files and ensuring the
-    underlying block device is fast.
+    This method works well, but requires cleaning up our files and
+    ensuring the underlying block device is fast.
 
 3.  Use Coprocs!
 
@@ -249,14 +260,15 @@ Of course given the title of this blog post we will go with option (3)!
 
 ## Grokking Coprocs
 
-A coproc allows us to execute a function in the background in a subshell
-and communicate with that process over pipes. If you squint they are
-almost like a Goroutine in Go, at least in the message passing sense. At
-a more basic level a coproc can be thought of shell syntactic sugar
-around named pipes. You daemonize a function as a separate process and
-then communicate with that daemon by writing to its standard input and
-reading from its standard output:
+A coproc allows us to execute a function as a separate process in a
+background subshell and communicate with that process over pipes. If you
+squint they are almost like a Goroutine in Go, at least in the message
+passing sense. At a more basic level a coproc can be thought of shell
+syntactic sugar around named pipes. You daemonize a function as a
+separate process and then communicate with that daemon by writing to its
+standard input and reading from its standard output:
 
+    ```bash
     #!/bin/bash
 
     function rando-daemon {
@@ -283,27 +295,28 @@ reading from its standard output:
 
     printf "%s\n" "$(rando butter bubbles)"
     printf "%s\n" "$(rando butter bubbles)"
+    ```
 
 Here we rename our `rando` function to `rando-daemon`, to indicate it is
 now a daemon, and we add a new `rando` function who communicates with
 the `rando-daemon` over its stdin and stdout pipes created by the coproc
 command `coproc RANDO { rando-daemon; }`. In this invocation `RANDO` is
-instantiated as an array of file descriptors connected to `rando-daemon`
-with `${RANDO[0]}` being stdout and `${RANDO[1]}` being stdin. We also
-retool `rando-daemon` to loop forever reading from stdin and writing its
-responses to stdout. With those changes made the function can now use a
-local associative array to cache results, which will persist as long as
-the coproc is running.
+instantiated as an array of file descriptors connected to the
+`rando-daemon` with `${RANDO[0]}` being its stdout and `${RANDO[1]}`
+being its stdin. We also retool `rando-daemon` to loop forever reading
+from stdin and writing its responses to stdout. With those changes made
+the function can now use a local associative array to cache results and
+the array persist as long as the coproc is running.
 
-The message format over the pipes is freeform, here I chose to use tab
+The message format over the pipes is free form, here I chose to use tab
 delimited data as it makes for a pretty simple solution.
 
-# Emojify With Coprocs
+## Emojify With Coprocs
 
 Given our new knowledge of coprocs we can retool the slow
 `short-code-emoji` function as a coproc daemon, adding a while loop
-reading stdin. Our query response is a tab delimited return code and
-emoji:
+reading from stdin. Our stdin query response is enhanced to include a
+tab delimited return code and emoji:
 
     ```bash
     function short-code-emoji-daemon {
@@ -353,12 +366,12 @@ Then add a query function to communicate with our daemon:
     }
     ```
 
-Here we improve the query function a bit to allow the daemon's response
-to include the return code as well as the emoji. This allows the query
-to function to handle errors from the daemon and return them as would a
-typical Bash function.
+Here we improve the `short-code-emoji` query function a bit to allow the
+daemon's response to include the return code as well as the emoji. This
+allows the query function to receive errors from the coproc daemon and
+return them in the same manner as a typical Bash function.
 
-# Benchmark
+## Benchmarking Emojify
 
 So did our coproc improve the speed of our fancy emojifier?
 
@@ -381,11 +394,21 @@ render!
 Using this same technique on our iptables generator gained us a speedup
 of 2.4 seconds!
 
+## Conclusion
+
+Bash functions are strange and attempting to view them akin to functions
+in typical languages will cause a lot of pain in my experience. However,
+viewing functions as separate commands exposes the nice symmetry between
+commands you execute in Bash and your own functions. Coprocs are an
+interesting and fun way to extend that view of Bash functions and turn
+them into long running daemons.
+
 ## Further Reading
 
--   [emojify - full source code both with and without coprocs](https://github.com/lollipopman/coproc-blog-post)
--   [Bash manual on
+1.  [emojify - full source code both with and without
+    coprocs](https://github.com/lollipopman/coproc-blog-post)
+2.  [Bash manual on
     coprocs](https://www.gnu.org/software/bash/manual/html_node/Coprocesses.html)
--   [How do you use the command coproc in various
+3.  [How do you use the command coproc in various
     shells?](https://unix.stackexchange.com/a/86331/83704): Great reply
     by Stéphane Chazelas on the topic
