@@ -81,7 +81,7 @@ function parse-text {
         else
             if [[ $parsing_code == 'true' ]]; then
                 if ! emoji=$(short-code-emoji "$code_accum" "$cldr_file"); then
-                    printf 'ERROR: Unable to get emoji for :%s:\n' "$code_accum" >&2
+                    printf 'ERROR: Unable to get emoji :%s:\n' "$code_accum" >&2
                     return 1
                 fi
                 printf '%s' "$emoji"
@@ -410,5 +410,5 @@ them into long running daemons.
 2.  [Bash manual on
     coprocs](https://www.gnu.org/software/bash/manual/html_node/Coprocesses.html)
 3.  [How do you use the command coproc in various
-    shells?](https://unix.stackexchange.com/a/86331/83704): Great reply
-    by Stéphane Chazelas on the topic
+    shells?](https://unix.stackexchange.com/a/86331/83704): Wonderful
+    reply by Stéphane Chazelas on the topic of coproc usage.
