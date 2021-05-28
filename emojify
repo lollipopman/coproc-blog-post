@@ -98,7 +98,7 @@ function parse-text {
 		else
 			if [[ $parsing_code == 'true' ]]; then
 				if ! emoji=$(short-code-emoji "$code_accum" "$cldr_file"); then
-					printf 'ERROR: Unable to obtain emoji for, :%s:\n' "$code_accum" >&2
+					printf 'ERROR: Unable to get emoji for :%s:\n' "$code_accum" >&2
 					return 1
 				fi
 				printf '%s' "$emoji"
