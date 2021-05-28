@@ -13,11 +13,11 @@ arguments?
     [memoize](https://en.wikipedia.org/wiki/Memoization) the calls? What
     a fabulous idea!
 
-Of course memoization of `ip route` executions with big routing tables
-doesn't sound very fun, so instead let us try to use memoization to
-speed up a fancy emoji short code program written in Bash. This program
-reads standard input and scans for emoji short codes, based on their
-text to speech description provided in Unicode's [Common Locale Data
+Memoizing `ip route` executions against big routing tables doesn't sound
+too fun, so instead let us try to use memoization to speed up a fancy
+emoji short code program written in Bash. This program reads standard
+input and scans for emoji short codes, based on their text to speech
+description provided in Unicode's [Common Locale Data
 Repository](https://github.com/unicode-org/cldr-json), thus empowering
 you to make your commit messages more beautiful!
 
