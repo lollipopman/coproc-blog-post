@@ -6,11 +6,12 @@ How do you speed up a complex Linux iptables generator written in Bash
 that executes `ip route` thousands of times, often with the same
 arguments?
 
-You could rearchitect the program to avoid the duplicate calls? Sadly
-you deem that too difficult. Perhaps you could return cached results for
-function calls when the inputs are identical, i.e.
-[memoize](https://en.wikipedia.org/wiki/Memoization) the calls? What a
-fabulous idea!
+-   You could rearchitect the program to avoid the duplicate calls?
+    Sadly you deem that too difficult.
+-   You could return cached results for function calls when the inputs
+    are identical, i.e.
+    [memoize](https://en.wikipedia.org/wiki/Memoization) the calls? What
+    a fabulous idea!
 
 Of course memoization of `ip route` executions with big routing tables
 doesn't sound very fun, so instead let us try to use memoization to
