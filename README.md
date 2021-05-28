@@ -20,21 +20,21 @@ text to speech description provided in Unicode's [Common Locale Data
 Repository](https://github.com/unicode-org/cldr-json), thus empowering
 you to make your commit messages more beautiful!
 
-``` bash
-$ ./emojify <<-'EOF'
-    Remove dead code! :red_heart: :red_heart: :red_heart: :red_heart: :red_heart:
+``` shell
+$ ./emojify <<'EOF'
+Remove dead code! :red_heart: :red_heart: :red_heart: :red_heart: :red_heart:
 
-    This code can go the way of the wonderful :sauropod: as our :nesting_dolls:
-    tech has been replaced with:
+This code can go the way of the wonderful :sauropod: as our :nesting_dolls:
+tech has been replaced with:
 
-        #!/bin/bash
-        msg='Sorry we have gone out of business! :nesting_dolls: :headstone:'
-        printf '%s\n' "$msg"
-        exit 0
+    #!/bin/bash
+    msg='Sorry we have gone out of business! :nesting_dolls: :headstone:'
+    printf '%s\n' "$msg"
+    exit 0
 
-    I suppose it is not that easy after all to build a product based on
-    :nesting_dolls: or to innovate and build a better :mouse_trap:, good luck next
-    time :red_heart: :red_heart:!
+I suppose it is not that easy after all to build a product based on
+:nesting_dolls: or to innovate and build a better :mouse_trap:, good luck next
+time :red_heart: :red_heart:!
 EOF
 
 Remove dead code! ❤ ❤ ❤ ❤ ❤
@@ -139,7 +139,7 @@ function short-code-emoji {
 Unfortunately, it is a bit slow, I can watch the emoji paint on my
 terminal!
 
-``` bash
+``` shell
 $ time ./emojify <input >/dev/null
 
 real    0m0.569s
@@ -375,7 +375,7 @@ return them in the same manner as a typical Bash function.
 
 So did our coproc improve the speed of our fancy emojifier?
 
-``` bash
+``` shell
 $ time ./emojify <input >/dev/null
 
 real    0m0.239s
@@ -386,7 +386,7 @@ sys     0m0.006s
 Indeed, over a 40% speedup! Now we don't have to wait for our emoji to
 render!
 
-``` bash
+``` shell
 $ echo ':raising_hands:' | ./emojify
 🙌
 ```
