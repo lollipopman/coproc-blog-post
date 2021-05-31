@@ -23,7 +23,7 @@ you to make your commit messages more beautiful!
 
 ``` shell
 $ ./emojify <<'EOF'
-Remove dead code! :red_heart: :red_heart: :red_heart: :red_heart: :red_heart:
+Remove dead code! :blue_heart: :blue_heart: :blue_heart: :blue_heart: :blue_heart:
 
 This code can go the way of the wonderful :sauropod: as our :nesting_dolls:
 tech has been replaced with:
@@ -35,10 +35,10 @@ tech has been replaced with:
 
 I suppose it is not that easy after all to build a product based on
 :nesting_dolls: or to innovate and build a better :mouse_trap:, good luck next
-time :red_heart: :red_heart:!
+time :blue_heart: :blue_heart:!
 EOF
 
-Remove dead code! ❤ ❤ ❤ ❤ ❤
+Remove dead code! 💙 💙 💙 💙 💙
 
 This code can go the way of the wonderful 🦕 as our 🪆
 tech has been replaced with:
@@ -50,7 +50,7 @@ tech has been replaced with:
 
 I suppose it is not that easy after all to build a product based on
 🪆 or to innovate and build a better 🪤, good luck next
-time ❤ ❤!
+time 💙 💙!
 ```
 
 The text parser reads each character of input and looks for short codes
