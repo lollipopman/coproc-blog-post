@@ -148,9 +148,9 @@ user    0m0.555s
 sys     0m0.017s
 ```
 
-Parsing a 336Kib json file is pretty quick with `jq` but for every
-repeated short code in our input we our repeating our work even though
-we know the result. So how can we memoize those repeated function calls
+Parsing a 336KiB json file is pretty quick with `jq`, but for every
+repeated short code in our input we our repeating our work, even though
+we know the result! So how can we memoize those repeated function calls
 to `short-code-emoji`?
 
 ## Bash Functions Are Wacky!
@@ -170,18 +170,18 @@ unix_epoch=$(epoch)
 printf 'from epoch func: %s\n' "$unix_epoch"
 ```
 
-You might assume that the calling of `epoch` occurs within the main Bash
-process, in contrast to the execution of `date`. However, when a bash
-function is executed, within a command substitution, Bash forks a
-process and executes the function in a child process or subshell. So
-effectively the function is executed as a separate command like `date`
-rather than as part of the main Bash process. Try running
-`strace --trace=process` on the above snippet to see the forked
-children.
+You might assume that the calling of the `epoch` function occurs within
+the main Bash process, in contrast to the execution of the external
+command `date`. However, when a bash function is executed, within a
+command substitution, Bash forks a process and executes the function in
+a child process or subshell. So effectively the function is executed as
+a external command like `date` rather than as part of the main Bash
+process. Try running `strace --trace=process` on the above snippet to
+see the creation of the forked children.
 
 Because a function is executed in a separate process, when using command
-substitution, a naive memoization strategy for a `rando` function that
-returns the same random value for any input might look like this:
+substitution, a naive memoization strategy for a `rando` function, that
+returns the same random value for any input, might look like this:
 
 ``` bash
 #!/bin/bash
@@ -257,7 +257,8 @@ There are many possible strategies including:
 
 3.  Use Coprocs!
 
-Of course given the title of this blog post we will go with option (3)!
+Of course given the title of this blog post we will go with option
+**(3)**!
 
 ## Grokking Coprocs
 
@@ -265,9 +266,10 @@ A coproc allows us to execute a function as a separate process in a
 background subshell and communicate with that process over pipes. If you
 squint they are almost like a Goroutine in Go, at least in the message
 passing sense. At a more basic level a coproc can be thought of shell
-syntactic sugar around named pipes. You daemonize a function as a
-separate process and then communicate with that daemon by writing to its
-standard input and reading from its standard output:
+syntactic sugar around [named
+pipes](https://en.wikipedia.org/wiki/Named_pipe). You daemonize a
+function as a separate process and then communicate with that daemon by
+writing to its standard input and reading from its standard output:
 
 ``` bash
 #!/bin/bash
@@ -306,11 +308,12 @@ instantiated as an array of file descriptors connected to the
 `rando-daemon` with `${RANDO[0]}` being its stdout and `${RANDO[1]}`
 being its stdin. We also retool `rando-daemon` to loop forever reading
 from stdin and writing its responses to stdout. With those changes made
-the function can now use a local associative array to cache results and
-the array persist as long as the coproc is running.
+the function can now use a local associative array to cache results as
+the array will persist as long as the coproc is running.
 
-The message format over the pipes is free form, here I chose to use tab
-delimited data as it makes for a pretty simple solution.
+As with any shell `|` the message format over the pipes is free form,
+here I chose to use tab delimited data as it makes for a pretty simple
+solution.
 
 ## Emojify With Coprocs
 
