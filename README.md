@@ -372,7 +372,7 @@ daemon's response to include the return code as well as the emoji. This
 allows the query function to receive errors from the coproc daemon and
 return them in the same manner as a typical Bash function.
 
-## Benchmarking Emojify
+## Benchmarking Coprocs
 
 So did our coproc improve the speed of our fancy emojifier?
 
