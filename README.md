@@ -145,7 +145,7 @@ function short-code-emoji {
 }
 ```
 
-Unfortunately, it is a bit slow, I can watch the emoji paint on my
+Unfortunately, it is a bit slow — I can watch the emoji paint on my
 terminal!
 
 ``` shell
@@ -239,8 +239,8 @@ There are many possible strategies including:
     printf "%s\n" "$(rando butter bubbles)"
     ```
 
-    Though this method makes for some pretty hard to read code if you
-    need to cache a lot of values!
+    Unfortunately, this method makes for some pretty hard to read code
+    if you need to cache a lot of values!
 
 2.  Cache the results in the filesystem:
 
