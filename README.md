@@ -25,32 +25,32 @@ you to make your commit messages more beautiful!
 $ ./emojify <<'EOF'
 Remove dead code! :blue_heart: :blue_heart: :blue_heart: :blue_heart: :blue_heart:
 
-This code can go the way of the wonderful :sauropod: as our :alembic: tech has
-been replaced with:
+This code can go the way of the wonderful :sauropod: as our :flying_saucer:
+tech has been replaced with:
 
     #!/bin/bash
-    msg='Sorry we have gone out of business! :alembic: :coffin:'
+    msg='Sorry we have gone out of business! :flying_saucer: :zombie:'
     printf '%s\n' "$msg"
     exit 0
 
-I suppose it is not that easy after all to build a product based on an
-:alembic: or to innovate and build a better :bathtub:, good luck next time
-:blue_heart: :blue_heart:!
+I suppose it is not that easy after all to build a product based on a
+:flying_saucer: or to innovate and build a better :fortune_cookie:, good luck
+next time :blue_heart: :blue_heart:!
 EOF
 
 Remove dead code! 💙 💙 💙 💙 💙
 
-This code can go the way of the wonderful 🦕 as our ⚗ tech has
-been replaced with:
+This code can go the way of the wonderful 🦕 as our 🛸
+tech has been replaced with:
 
     #!/bin/bash
-    msg='Sorry we have gone out of business! ⚗ ⚰'
+    msg='Sorry we have gone out of business! 🛸 🧟'
     printf '%s\n' "$msg"
     exit 0
 
-I suppose it is not that easy after all to build a product based on an
-⚗ or to innovate and build a better 🛁, good luck next time
-💙 💙!
+I suppose it is not that easy after all to build a product based on a
+🛸 or to innovate and build a better 🥠, good luck
+next time 💙 💙!
 ```
 
 The text parser reads each character of input and looks for short codes
