@@ -410,8 +410,8 @@ user    0m0.555s
 sys     0m0.017s
 ```
 
-Indeed, over a 40% speedup! Now we don't have to wait for our emoji to
-render!
+Indeed, over a **40%** speedup! Now we don't have to wait for our emoji
+to render!
 
 ``` shell
 $ echo ':raising_hands:' | ./emojify
