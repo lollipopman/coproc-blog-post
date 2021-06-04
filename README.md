@@ -2,8 +2,10 @@
 
 ## Motivation & Some Emoji
 
-How do you speed up a complex Linux iptables generator written in Bash
-that executes `ip route` thousands of times, often with the same
+How do you speed up a Bash program that executes a command or function
+thousands of times, often with the same arguments? Or in our specific
+case, how do you speed up a complex Linux iptables generator written in
+Bash that executes `ip route` thousands of times, often with the same
 arguments?
 
 -   *You could,* rearchitect the program to avoid the duplicate calls?
@@ -13,11 +15,16 @@ arguments?
     [memoize](https://en.wikipedia.org/wiki/Memoization) the calls? What
     a fabulous idea!
 
-Memoizing `ip route` executions against big routing tables doesn't sound
-too fun, so instead let us try to use memoization to speed up a fancy
-emoji short code program written in Bash. This program reads standard
-input and scans for emoji short codes, based on their text to speech
-description provided in Unicode's [Common Locale Data
+However, memoizing `ip route` executions against big routing tables
+doesn't sound too fun, nor is the code small enought for a blog post, so
+instead let us try to use memoization to speed up a fancy emoji short
+code parser written in Bash!
+
+First we will walk through the program without memoization. Then we will
+benchmark the program so we can compare its runtime with the memoized
+version. The program reads standard input and scans for emoji short
+codes, based on their text to speech description provided in Unicode's
+[Common Locale Data
 Repository](https://github.com/unicode-org/cldr-json), thus empowering
 you to make your commit messages more beautiful!
 
@@ -54,9 +61,9 @@ next time 💙 💙!
 ```
 
 The text parser reads each character of input and looks for short codes
-of the form `:<text to speech>:` replacing spaces in the text to speech
-description with underscores: e.g. `:rolled-up_newspaper:`(🗞️) or
-`:crystal_ball:`(🔮):
+of the form `:<text to speech>:` where spaces in the text to speech
+description have been replaced with underscores: e.g.
+`:rolled-up_newspaper:`(🗞️) or `:crystal_ball:`(🔮):
 
 ``` bash
 function parse-text {
@@ -152,7 +159,8 @@ sys     0m0.017s
 Parsing a 336KiB json file is pretty quick with `jq`, but for every
 repeated short code in our input we our repeating our work, even though
 we know the result! So how can we memoize those repeated function calls
-to `short-code-emoji`?
+to `short-code-emoji`? Before we answer that question lets delve into
+how Bash functions work so we can better understand our options.
 
 ## Bash Functions Are Wacky!
 
@@ -173,7 +181,7 @@ printf 'from epoch func: %s\n' "$unix_epoch"
 
 You might assume that the calling of the `epoch` function occurs within
 the main Bash process, in contrast to the execution of the external
-command `date`. However, when a bash function is executed, within a
+command `date`. However, when a Bash function is executed, within a
 command substitution, Bash forks a process and executes the function in
 a child process or subshell. So effectively the function is executed as
 a external command like `date` rather than as part of the main Bash
@@ -231,7 +239,7 @@ There are many possible strategies including:
     printf "%s\n" "$(rando butter bubbles)"
     ```
 
-    Though that method makes for some pretty hard to read code if you
+    Though this method makes for some pretty hard to read code if you
     need to cache a lot of values!
 
 2.  Cache the results in the filesystem:
@@ -259,14 +267,15 @@ There are many possible strategies including:
 3.  Use Coprocs!
 
 Of course given the title of this blog post we will go with option
-**(3)**!
+**(3)**! First we will understand how coprocs work, with some small
+examples, then we will modify `emojify` to use coprocs for memoization.
 
 ## Grokking Coprocs
 
 A coproc allows us to execute a function as a separate process in a
 background subshell and communicate with that process over pipes. If you
 squint they are almost like a Goroutine in Go, at least in the message
-passing sense. At a more basic level a coproc can be thought of shell
+passing sense. At a more basic level a coproc can be thought of as shell
 syntactic sugar around [named
 pipes](https://en.wikipedia.org/wiki/Named_pipe). You daemonize a
 function as a separate process and then communicate with that daemon by
@@ -357,7 +366,7 @@ function short-code-emoji-daemon {
 }
 ```
 
-Then add a query function to communicate with our daemon:
+Then we add a query function to communicate with our daemon:
 
 ``` bash
 short-code-emoji() {
@@ -374,11 +383,14 @@ short-code-emoji() {
 Here we improve the `short-code-emoji` query function a bit to allow the
 daemon's response to include the return code as well as the emoji. This
 allows the query function to receive errors from the coproc daemon and
-return them in the same manner as a typical Bash function.
+return them in the same manner as a typical Bash function. Now we are
+ready to compare our memoized `emojiy` with the original one.
 
 ## Benchmarking Coprocs
 
 So did our coproc improve the speed of our fancy emojifier?
+
+### Memoized with Coprocs
 
 ``` shell
 $ time ./emojify <input >/dev/null
@@ -386,6 +398,16 @@ $ time ./emojify <input >/dev/null
 real    0m0.239s
 user    0m0.015s
 sys     0m0.006s
+```
+
+### Original
+
+``` shell
+$ time ./emojify-orig <input >/dev/null
+
+real    0m0.569s
+user    0m0.555s
+sys     0m0.017s
 ```
 
 Indeed, over a 40% speedup! Now we don't have to wait for our emoji to
