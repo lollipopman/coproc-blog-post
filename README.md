@@ -8,15 +8,15 @@ case, how do you speed up a complex Linux iptables generator written in
 Bash that executes `ip route` thousands of times, often with the same
 arguments?
 
--   *You could,* rearchitect the program to avoid the duplicate calls?
+-   *You could* rearchitect the program to avoid the duplicate calls?
     Sadly you deem that too difficult.
--   *You could,* return cached results for function calls when the
-    inputs are identical, i.e.
+-   *You could* return cached results for function calls when the inputs
+    are identical, i.e.
     [memoize](https://en.wikipedia.org/wiki/Memoization) the calls? What
     a fabulous idea!
 
 However, memoizing `ip route` executions against big routing tables
-doesn't sound too fun, nor is the code small enought for a blog post, so
+doesn't sound too fun, nor is the code small enough for a blog post, so
 instead let us try to use memoization to speed up a fancy emoji short
 code parser written in Bash!
 
