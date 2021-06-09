@@ -439,3 +439,10 @@ them into long running daemons.
 3.  [How do you use the command coproc in various
     shells?](https://unix.stackexchange.com/a/86331/83704): Wonderful
     reply by Stéphane Chazelas on the topic of coproc usage.
+
+## Acknowledgments
+
+Thanks to [Randall Mason](https://github.com/ClashTheBunny), [Stephen
+Gelman](https://github.com/ssgelm), & [Brett
+Kochendorfer](https://github.com/bkochendorfer) for providing feedback
+on this post.
