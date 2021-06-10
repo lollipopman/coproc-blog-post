@@ -419,7 +419,7 @@ $ echo ':raising_hands:' | ./emojify
 ```
 
 Using this same technique on our iptables generator gained us a speedup
-of 2.4 seconds!
+of 5.4 seconds off a previous total runtime of 14.8 seconds!
 
 ## Conclusion
 
