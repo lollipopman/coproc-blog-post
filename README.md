@@ -428,7 +428,9 @@ in typical languages will cause a lot of pain in my experience. However,
 viewing functions as separate commands exposes the nice symmetry between
 commands you execute in Bash and your own functions. Coprocs are an
 interesting and fun way to extend that view of Bash functions and turn
-them into long running daemons.
+them into long running daemons. There is some discussion of this blog
+post on
+[lobste.rs](https://lobste.rs/s/yxzzov/memoize_commands_bash_functions_with)
 
 ## Further Reading
 
@@ -439,6 +441,8 @@ them into long running daemons.
 3.  [How do you use the command coproc in various
     shells?](https://unix.stackexchange.com/a/86331/83704): Wonderful
     reply by Stéphane Chazelas on the topic of coproc usage.
+4.  [Using more than one
+    coproc?](https://mail.gnu.org/archive/html/help-bash/2021-03/msg00207.html)
 
 ## Acknowledgments
 
