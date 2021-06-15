@@ -439,7 +439,7 @@ post on
 2.  [Bash manual on
     coprocs](https://www.gnu.org/software/bash/manual/html_node/Coprocesses.html)
 3.  [How do you use the command coproc in various
-    shells?](https://unix.stackexchange.com/a/86331/83704): Wonderful
+    shells?](https://unix.stackexchange.com/a/86372/83704): Wonderful
     reply by Stéphane Chazelas on the topic of coproc usage.
 4.  [Using more than one
     coproc?](https://mail.gnu.org/archive/html/help-bash/2021-03/msg00207.html)
